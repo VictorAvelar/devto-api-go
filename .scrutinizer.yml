@@ -1,6 +1,9 @@
 checks:
     go: true
 build:
+    environment:
+        variables:
+            GO111MODULES: 'on'
     nodes:
         analysis:
             project_setup:
