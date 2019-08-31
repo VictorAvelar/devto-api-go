@@ -9,7 +9,6 @@ build:
             environment:
                 go:
                     version: go1.12.9
-                GO111MODULE: on
             tests:
                 override:
                     - go-scrutinizer-run
