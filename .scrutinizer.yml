@@ -9,6 +9,7 @@ build:
             environment:
                 go:
                     version: go1.12.9
+                    go_import_path: 'github.com/VictorAvelar/devto-api-go'
             tests:
                 override:
                     - go-scrutinizer-run
