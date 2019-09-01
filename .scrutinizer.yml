@@ -17,7 +17,7 @@ build:
                     - go-scrutinizer-run
                     - govet-run
                     - golint-run
-                    - 
-                        command: 'go test ./... -coverprofile=cover.out'
-                        coverage: 'cover.out'
+                    - command: 'go test ./... -coverprofile=cover.out'
+                      coverage: 
+                        file: 'cover.out'
                         format: 'go-cc'
