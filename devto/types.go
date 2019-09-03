@@ -60,6 +60,16 @@ type Article struct {
 	Published              bool         `json:"published,omitempty"`
 }
 
+//ArticleListOptions holds the query values to pass as
+//query string parameter to the Articles List action.
+type ArticleListOptions struct {
+	Tags     string `url:"tag,omitempty"`
+	Username string `url:"username,omitempty"`
+	State    string `url:"state,omitempty"`
+	Top      string `url:"top,omitempty"`
+	Page     int    `url:"page,omitempty"`
+}
+
 type WebURL struct {
 	*url.URL
 }
@@ -79,7 +89,7 @@ func (s *WebURL) UnmarshalJSON(b []byte) error {
 
 //APIResource describes a RESTish endpoint
 type APIResource interface {
-	List(ctx context.Context) ([]Article, error)
+	List(ctx context.Context, opt ArticleListOptions) ([]Article, error)
 	Find(ctx context.Context, id uint32) (Article, error)
 	New(ctx context.Context, a Article) (Article, error)
 	Update(ctx context.Context, a Article) (Article, error)
