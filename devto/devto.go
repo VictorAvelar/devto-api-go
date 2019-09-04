@@ -3,19 +3,22 @@ package devto
 import (
 	"context"
 	"errors"
+	"io"
 	"net/http"
+	"net/url"
 )
 
 //Configuration constants
 const (
-	BaseURL      string = "https://dev.to/api"
+	BaseURL      string = "https://dev.to"
 	APIVersion   string = "0.5.1"
 	APIKeyHeader string = "api-key"
 )
 
 //devto client errors
 var (
-	ErrMissingConfig = errors.New("missing configuration")
+	ErrMissingConfig     = errors.New("missing configuration")
+	ErrProtectedEndpoint = errors.New("to use this resource you need to provide an authentication method")
 )
 
 type httpClient interface {
@@ -26,13 +29,15 @@ type httpClient interface {
 //against dev.to API
 type Client struct {
 	Context    context.Context
+	BaseURL    *url.URL
 	HTTPClient httpClient
 	Config     *Config
+	Articles   *ArticlesResource
 }
 
 //NewClient takes a context, a configuration pointer and optionally a
 //base http client (bc) to build an Client instance.
-func NewClient(ctx context.Context, conf *Config, bc httpClient) (dev *Client, err error) {
+func NewClient(ctx context.Context, conf *Config, bc httpClient, bu string) (dev *Client, err error) {
 	if bc == nil {
 		bc = http.DefaultClient
 	}
@@ -45,9 +50,32 @@ func NewClient(ctx context.Context, conf *Config, bc httpClient) (dev *Client, e
 		return nil, ErrMissingConfig
 	}
 
-	return &Client{
+	if bu == "" {
+		bu = BaseURL
+	}
+
+	u, _ := url.Parse(bu)
+
+	c := &Client{
 		Context:    ctx,
+		BaseURL:    u,
 		HTTPClient: bc,
 		Config:     conf,
-	}, nil
+	}
+	c.Articles = &ArticlesResource{API: c}
+	return c, nil
+}
+
+//NewRequest build the request relative to the client BaseURL
+func (c *Client) NewRequest(method string, uri string, body io.Reader) (*http.Request, error) {
+	u, err := url.Parse(uri)
+	if err != nil {
+		return nil, err
+	}
+	fu := c.BaseURL.ResolveReference(u).String()
+	req, err := http.NewRequest(method, fu, body)
+	if err != nil {
+		return nil, err
+	}
+	return req, nil
 }

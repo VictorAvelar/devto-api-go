@@ -10,9 +10,8 @@ var (
 //Config contains the elements required to initialize a
 // devto client.
 type Config struct {
-	BaseHTTPClient httpClient
-	APIKey         string
-	InsecureOnly   bool
+	APIKey       string
+	InsecureOnly bool
 }
 
 //NewConfig build a devto configuration instance with the
