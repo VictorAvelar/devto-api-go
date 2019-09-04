@@ -4,6 +4,7 @@ import (
 	"context"
 	"io/ioutil"
 	"net/http"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -88,5 +89,85 @@ func TestArticlesResource_Find(t *testing.T) {
 
 	if article.ID != 164198 {
 		t.Error("article returned is not the one requested")
+	}
+}
+
+func TestArticlesResource_New(t *testing.T) {
+	setup()
+	defer teardown()
+	testMux.HandleFunc("/api/articles", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Error("invalid method for request")
+		}
+		cont, _ := ioutil.ReadAll(r.Body)
+		w.Header().Add("content-type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		w.Write(cont)
+	})
+
+	res, _ := testClientPro.Articles.New(ctx, Article{
+		TypeOf:    "article",
+		Title:     "Demo article",
+		Published: false,
+	})
+
+	if res.Title != "Demo article" {
+		t.Error("article parsing failed")
+	}
+}
+
+func TestArticlesResource_NewFailsWhenInsecure(t *testing.T) {
+	setup()
+	defer teardown()
+
+	_, err := testClientPub.Articles.New(ctx, Article{
+		TypeOf:    "article",
+		Title:     "Demo article",
+		Published: false,
+	})
+
+	if !reflect.DeepEqual(err, ErrProtectedEndpoint) {
+		t.Error("auth check failed")
+	}
+}
+
+func TestArticlesResource_Update(t *testing.T) {
+	setup()
+	defer teardown()
+	testMux.HandleFunc("/api/articles/164198", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut {
+			t.Error("invalid method for request")
+		}
+		cont, _ := ioutil.ReadAll(r.Body)
+		w.Header().Add("content-type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		w.Write(cont)
+	})
+
+	res, _ := testClientPro.Articles.Update(ctx, Article{
+		TypeOf:    "article",
+		ID:        164198,
+		Title:     "Demo article",
+		Published: false,
+	})
+
+	if res.Title != "Demo article" {
+		t.Error("article parsing failed")
+	}
+}
+
+func TestArticlesResource_UpdateFailsWhenInsecure(t *testing.T) {
+	setup()
+	defer teardown()
+
+	_, err := testClientPub.Articles.Update(ctx, Article{
+		TypeOf:    "article",
+		ID:        164198,
+		Title:     "Demo article",
+		Published: false,
+	})
+
+	if !reflect.DeepEqual(err, ErrProtectedEndpoint) {
+		t.Error("auth check failed")
 	}
 }
