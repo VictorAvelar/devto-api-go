@@ -1,7 +1,6 @@
 package devto
 
 import (
-	"context"
 	"net/url"
 	"strings"
 	"time"
@@ -85,12 +84,4 @@ func (s *WebURL) UnmarshalJSON(b []byte) error {
 	}
 	s.URL = uri
 	return nil
-}
-
-//APIResource describes a RESTish endpoint
-type APIResource interface {
-	List(ctx context.Context, opt ArticleListOptions) ([]Article, error)
-	Find(ctx context.Context, id uint32) (Article, error)
-	New(ctx context.Context, a Article) (Article, error)
-	Update(ctx context.Context, a Article) (Article, error)
 }
