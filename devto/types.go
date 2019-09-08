@@ -69,6 +69,8 @@ type ArticleListOptions struct {
 	Page     int    `url:"page,omitempty"`
 }
 
+// WebURL is a class embed to override default umarshal
+// behavior.
 type WebURL struct {
 	*url.URL
 }
