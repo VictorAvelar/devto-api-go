@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-//User contains information about a devto account
+// User contains information about a devto account
 type User struct {
 	Name            string  `json:"name,omitempty"`
 	Username        string  `json:"username,omitempty"`
@@ -17,8 +17,8 @@ type User struct {
 	ProfileImage90  *WebURL `json:"profile_image_90,omitempty"`
 }
 
-//Organization describes a company or group that
-//publishes content to devto.
+// Organization describes a company or group that
+// publishes content to devto.
 type Organization struct {
 	Name           string  `json:"name,omitempty"`
 	Username       string  `json:"username,omitempty"`
@@ -27,11 +27,11 @@ type Organization struct {
 	ProfileImage90 *WebURL `json:"profile_image_90,omitempty"`
 }
 
-//Tags are a group of topics related to an article
+// Tags are a group of topics related to an article
 type Tags []string
 
-//Article contains all the information related to a single
-//information resource from devto.
+// Article contains all the information related to a single
+// information resource from devto.
 type Article struct {
 	TypeOf                 string       `json:"type_of,omitempty"`
 	ID                     uint32       `json:"id,omitempty"`
@@ -59,8 +59,8 @@ type Article struct {
 	Published              bool         `json:"published,omitempty"`
 }
 
-//ArticleListOptions holds the query values to pass as
-//query string parameter to the Articles List action.
+// ArticleListOptions holds the query values to pass as
+// query string parameter to the Articles List action.
 type ArticleListOptions struct {
 	Tags     string `url:"tag,omitempty"`
 	Username string `url:"username,omitempty"`
@@ -69,12 +69,14 @@ type ArticleListOptions struct {
 	Page     int    `url:"page,omitempty"`
 }
 
+// WebURL is a class embed to override default umarshal
+// behavior.
 type WebURL struct {
 	*url.URL
 }
 
-//UnmarshalJSON overrides the default unmarshal behaviour
-//for URL
+// UnmarshalJSON overrides the default unmarshal behaviour
+// for URL
 func (s *WebURL) UnmarshalJSON(b []byte) error {
 	c := string(b)
 	c = strings.Trim(c, "\"")

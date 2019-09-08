@@ -47,3 +47,43 @@ func TestWebURL_UnmarshalJSON(t *testing.T) {
 		})
 	}
 }
+
+func TestWebURL_UnmarshalJSON1(t *testing.T) {
+	type args struct {
+		b []byte
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			"Unmarshal google.com",
+			args{b: []byte("https://dev.to")},
+			false,
+		},
+		{
+			"Unmarshal parse error",
+			args{b: []byte(" https://dev.to")},
+			true,
+		},
+		{
+			"unmarshal partial url",
+			args{b: []byte("dev.to")},
+			false,
+		},
+		{
+			"unmarshal url with query",
+			args{b: []byte("https://dev.to/api/articles?username=victoravelar")},
+			false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &WebURL{}
+			if err := s.UnmarshalJSON(tt.args.b); (err != nil) != tt.wantErr {
+				t.Errorf("UnmarshalJSON() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
