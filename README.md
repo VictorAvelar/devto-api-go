@@ -4,7 +4,7 @@ A go client for the dev.to API
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 #### Travis CI
-[![Travis Build Status](https://travis-ci.com/VictorAvelar/devto-api-go.svg?branch=master)](https://travis-ci.com/VictorAvelar/devto-api-go)
+[![Build Status](https://travis-ci.org/VictorAvelar/devto-api-go.svg?branch=master)](https://travis-ci.org/VictorAvelar/devto-api-go)
 
 #### Scrutinizer
 [![Scrutinizer Build Status](https://scrutinizer-ci.com/g/VictorAvelar/devto-api-go/badges/build.png?b=master)](https://scrutinizer-ci.com/g/VictorAvelar/devto-api-go/build-status/master)
