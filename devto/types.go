@@ -69,7 +69,14 @@ type ArticleListOptions struct {
 	Page     int    `url:"page,omitempty"`
 }
 
-// WebURL is a class embed to override default umarshal
+// MyArticlesOptions defines pagination options used as query
+// params in the dev.to "list my articles" endpoints.
+type MyArticlesOptions struct {
+	Page    int `url:"page,omitempty"`
+	PerPage int `url:"per_page,omitempty"`
+}
+
+// WebURL is a class embed to override default unmarshal
 // behavior.
 type WebURL struct {
 	*url.URL
