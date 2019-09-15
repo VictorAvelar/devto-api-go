@@ -105,11 +105,13 @@ func TestArticlesResource_New(t *testing.T) {
 		w.Write(cont)
 	})
 
-	res, _ := testClientPro.Articles.New(ctx, Article{
-		TypeOf:    "article",
+	res, err := testClientPro.Articles.New(ctx, ArticleUpdate{
 		Title:     "Demo article",
 		Published: false,
 	})
+	if err != nil {
+		t.Fatalf("unexpected error publishing article: %v", err)
+	}
 
 	if res.Title != "Demo article" {
 		t.Error("article parsing failed")
@@ -120,8 +122,7 @@ func TestArticlesResource_NewFailsWhenInsecure(t *testing.T) {
 	setup()
 	defer teardown()
 
-	_, err := testClientPub.Articles.New(ctx, Article{
-		TypeOf:    "article",
+	_, err := testClientPub.Articles.New(ctx, ArticleUpdate{
 		Title:     "Demo article",
 		Published: false,
 	})
@@ -144,12 +145,13 @@ func TestArticlesResource_Update(t *testing.T) {
 		w.Write(cont)
 	})
 
-	res, _ := testClientPro.Articles.Update(ctx, Article{
-		TypeOf:    "article",
-		ID:        164198,
+	res, err := testClientPro.Articles.Update(ctx, ArticleUpdate{
 		Title:     "Demo article",
 		Published: false,
-	})
+	}, 164198)
+	if err != nil {
+		t.Fatalf("unexpected error publishing article: %v", err)
+	}
 
 	if res.Title != "Demo article" {
 		t.Error("article parsing failed")
@@ -160,12 +162,10 @@ func TestArticlesResource_UpdateFailsWhenInsecure(t *testing.T) {
 	setup()
 	defer teardown()
 
-	_, err := testClientPub.Articles.Update(ctx, Article{
-		TypeOf:    "article",
-		ID:        164198,
+	_, err := testClientPub.Articles.Update(ctx, ArticleUpdate{
 		Title:     "Demo article",
 		Published: false,
-	})
+	}, 164198)
 
 	if !reflect.DeepEqual(err, ErrProtectedEndpoint) {
 		t.Error("auth check failed")
