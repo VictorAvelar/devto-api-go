@@ -54,7 +54,10 @@ func NewClient(ctx context.Context, conf *Config, bc httpClient, bu string) (dev
 		bu = BaseURL
 	}
 
-	u, _ := url.Parse(bu)
+	u, err := url.Parse(bu)
+	if err != nil {
+		return nil, err
+	}
 
 	c := &Client{
 		Context:    ctx,

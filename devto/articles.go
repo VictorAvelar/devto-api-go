@@ -26,23 +26,40 @@ func (ar *ArticlesResource) List(ctx context.Context, opt ArticleListOptions) ([
 	if err != nil {
 		return nil, err
 	}
-	req, _ := ar.API.NewRequest(http.MethodGet, fmt.Sprintf("api/articles?%s", q.Encode()), nil)
-	res, _ := ar.API.HTTPClient.Do(req)
+	req, err := ar.API.NewRequest(http.MethodGet, fmt.Sprintf("api/articles?%s", q.Encode()), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := ar.API.HTTPClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
 	cont := decodeResponse(res)
-	json.Unmarshal(cont, &l)
+	if err := json.Unmarshal(cont, &l); err != nil {
+		return nil, err
+	}
 	return l, nil
 }
 
 // Find will retrieve an Article matching the ID passed.
 func (ar *ArticlesResource) Find(ctx context.Context, id uint32) (Article, error) {
 	var art Article
-	req, _ := ar.API.NewRequest(http.MethodGet, fmt.Sprintf("api/articles/%d", id), nil)
+	req, err := ar.API.NewRequest(http.MethodGet, fmt.Sprintf("api/articles/%d", id), nil)
+	if err != nil {
+		return art, err
+	}
+
 	res, err := ar.API.HTTPClient.Do(req)
 	if err != nil {
 		return art, err
 	}
 	cont := decodeResponse(res)
-	json.Unmarshal(cont, &art)
+	if err := json.Unmarshal(cont, &art); err != nil {
+		return Article{}, err
+	}
 	return art, nil
 }
 
@@ -65,7 +82,9 @@ func (ar *ArticlesResource) New(ctx context.Context, a Article) (Article, error)
 		return a, err
 	}
 	content := decodeResponse(res)
-	json.Unmarshal(content, &a)
+	if err := json.Unmarshal(content, &a); err != nil {
+		return Article{}, err
+	}
 	return a, nil
 }
 
@@ -90,6 +109,8 @@ func (ar *ArticlesResource) Update(ctx context.Context, a Article) (Article, err
 		return a, err
 	}
 	content := decodeResponse(res)
-	json.Unmarshal(content, &a)
+	if err := json.Unmarshal(content, &a); err != nil {
+		return Article{}, err
+	}
 	return a, nil
 }
