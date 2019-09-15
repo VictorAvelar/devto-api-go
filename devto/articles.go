@@ -44,6 +44,18 @@ func (ar *ArticlesResource) List(ctx context.Context, opt ArticleListOptions) ([
 	return l, nil
 }
 
+// ListForTag is a convenience method for retrieving articles
+// for a particular tag, calling the base List method.
+func (ar *ArticlesResource) ListForTag(ctx context.Context, tag string, page int) ([]Article, error) {
+	return ar.List(ctx, ArticleListOptions{Tags: tag, Page: page})
+}
+
+// ListForUser is a convenience method for retrieving articles
+// by a particular user, calling the base List method.
+func (ar *ArticlesResource) ListForUser(ctx context.Context, username string, page int) ([]Article, error) {
+	return ar.List(ctx, ArticleListOptions{Username: username, Page: page})
+}
+
 // Find will retrieve an Article matching the ID passed.
 func (ar *ArticlesResource) Find(ctx context.Context, id uint32) (Article, error) {
 	var art Article
