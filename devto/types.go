@@ -147,6 +147,7 @@ type Article struct {
 	CoverImage             *WebURL    `json:"cover_image,omitempty"`
 	SocialImage            *WebURL    `json:"social_image,omitempty"`
 	ReadablePublishDate    string     `json:"readable_publish_date"`
+	Published              bool       `json:"published,omitempty"`
 	PublishedAt            *time.Time `json:"published_at,omitempty"`
 	CreatedAt              *time.Time `json:"created_at,omitempty"`
 	EditedAt               *time.Time `json:"edited_at,omitempty"`
