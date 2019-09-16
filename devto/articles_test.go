@@ -2,6 +2,7 @@ package devto
 
 import (
 	"context"
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"reflect"
@@ -46,11 +47,17 @@ func TestArticlesResource_List(t *testing.T) {
 func TestArticlesResource_ListWithQueryParams(t *testing.T) {
 	setup()
 	defer teardown()
-	testMux.HandleFunc("/api/articles?page=1&state=fresh&tag=go&top=1&username=victoravelar", func(w http.ResponseWriter, r *http.Request) {
-		if !strings.HasSuffix("username=victoravelar", r.URL.String()) {
+	testMux.HandleFunc("/api/articles", func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasSuffix(r.URL.String(), "username=victoravelar") {
 			t.Error("url mismatch")
 		}
-		w.WriteHeader(http.StatusOK)
+
+		var articles []ListedArticle
+		if err := json.NewEncoder(w).Encode(&articles); err != nil {
+			t.Errorf("error marshalling ListedArticles to JSON: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 	})
 
 	q := ArticleListOptions{
