@@ -3,9 +3,12 @@ package devto
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -22,11 +25,14 @@ func TestArticlesResource_List(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+
 	testMux.HandleFunc("/api/articles", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("content-type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		w.Write(cont)
 	})
+
+	http.DefaultClient.Get(testServer.URL)
 
 	var ctx = context.Background()
 	list, err := testClientPub.Articles.List(ctx, ArticleListOptions{})
@@ -266,16 +272,31 @@ func TestArticlesResource_ListAllMyArticles(t *testing.T) {
 func TestArticlesResource_Find(t *testing.T) {
 	setup()
 	defer teardown()
-	cont, err := ioutil.ReadAll(strings.NewReader(testdata.FindResponse))
-	if err != nil {
-		t.Error(err)
-	}
-	testMux.HandleFunc("/api/articles/164198", func(w http.ResponseWriter, r *http.Request) {
+
+	testMux.HandleFunc("/api/articles/", func(w http.ResponseWriter, r *http.Request) {
+		id, err := getNumericPathComponent(r, 2)
+		if err != nil {
+			sendErrorResponse(t, w, ErrorResponse{
+				ErrorMessage: fmt.Sprintf("error getting article ID from URL: %v", err),
+				Status:       http.StatusBadRequest,
+			})
+			return
+		}
+
+		if id != 164198 {
+			sendErrorResponse(t, w, ErrorResponse{
+				ErrorMessage: "not found",
+				Status:       http.StatusNotFound,
+			})
+			return
+		}
+
 		w.Header().Add("content-type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write(cont)
+		w.Write([]byte(testdata.FindResponse))
 	})
 
+	// retrieve article 164198
 	article, err := testClientPub.Articles.Find(ctx, 164198)
 	if err != nil {
 		t.Error(err)
@@ -284,6 +305,10 @@ func TestArticlesResource_Find(t *testing.T) {
 	if article.ID != 164198 {
 		t.Error("article returned is not the one requested")
 	}
+
+	// test 404 response
+	_, err = testClientPub.Articles.Find(ctx, 11235813)
+	checkErrorResponse(t, err, http.StatusNotFound)
 }
 
 func TestArticlesResource_New(t *testing.T) {
@@ -296,13 +321,20 @@ func TestArticlesResource_New(t *testing.T) {
 
 		var au ArticleUpdate
 		if err := json.NewDecoder(r.Body).Decode(&au); err != nil {
-			t.Fatalf("error unmarshallling ArticleUpdate from JSON: %v", err)
-			w.WriteHeader(http.StatusBadRequest)
+			sendErrorResponse(t, w, ErrorResponse{
+				ErrorMessage: "Bad Request",
+				Status:       http.StatusBadRequest,
+			})
+			return
+		} else if au.Title == "" {
+			sendErrorResponse(t, w, ErrorResponse{
+				ErrorMessage: "param is missing or the value is empty",
+				Status:       http.StatusUnprocessableEntity,
+			})
 			return
 		}
 
 		a := Article{
-			ID:        112358,
 			Title:     au.Title,
 			Published: au.Published,
 		}
@@ -318,6 +350,7 @@ func TestArticlesResource_New(t *testing.T) {
 		w.Write(b)
 	})
 
+	// Test successfully uploading an article
 	res, err := testClientPro.Articles.New(ctx, ArticleUpdate{
 		Title:     "Demo article",
 		Published: false,
@@ -329,6 +362,10 @@ func TestArticlesResource_New(t *testing.T) {
 	if res.Title != "Demo article" {
 		t.Error("article parsing failed")
 	}
+
+	// Test uploading an invalid article
+	_, err = testClientPro.Articles.New(ctx, ArticleUpdate{})
+	checkErrorResponse(t, err, http.StatusUnprocessableEntity)
 }
 
 func TestArticlesResource_NewFailsWhenInsecure(t *testing.T) {
@@ -340,7 +377,7 @@ func TestArticlesResource_NewFailsWhenInsecure(t *testing.T) {
 		Published: false,
 	})
 
-	if !reflect.DeepEqual(err, ErrProtectedEndpoint) {
+	if err != ErrProtectedEndpoint {
 		t.Error("auth check failed")
 	}
 }
@@ -348,27 +385,53 @@ func TestArticlesResource_NewFailsWhenInsecure(t *testing.T) {
 func TestArticlesResource_Update(t *testing.T) {
 	setup()
 	defer teardown()
-	testMux.HandleFunc("/api/articles/164198", func(w http.ResponseWriter, r *http.Request) {
+
+	testMux.HandleFunc("/api/articles/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPut {
-			t.Error("invalid method for request")
+			sendErrorResponse(t, w, ErrorResponse{
+				ErrorMessage: "invalid method for request",
+				Status:       http.StatusMethodNotAllowed,
+			})
+			return
+		}
+
+		id, err := getNumericPathComponent(r, 2)
+		if err != nil {
+			sendErrorResponse(t, w, ErrorResponse{
+				ErrorMessage: fmt.Sprintf("error getting article ID from URL: %v", err),
+				Status:       http.StatusBadRequest,
+			})
+			return
+		}
+
+		if id != 164198 {
+			sendErrorResponse(t, w, ErrorResponse{
+				ErrorMessage: "not found",
+				Status:       http.StatusNotFound,
+			})
+			return
 		}
 
 		var au ArticleUpdate
 		if err := json.NewDecoder(r.Body).Decode(&au); err != nil {
-			t.Fatalf("error unmarshallling ArticleUpdate from JSON: %v", err)
-			w.WriteHeader(http.StatusBadRequest)
+			sendErrorResponse(t, w, ErrorResponse{
+				ErrorMessage: fmt.Sprintf("error unmarshalling ArticleUpdate from JSON: %v", err),
+				Status:       http.StatusBadRequest,
+			})
 			return
 		}
 
 		a := Article{
-			ID:        164198,
+			ID:        uint32(id),
 			Title:     au.Title,
 			Published: au.Published,
 		}
 		b, err := json.Marshal(&a)
 		if err != nil {
-			t.Errorf("error marshalling Article to JSON")
-			w.WriteHeader(http.StatusInternalServerError)
+			sendErrorResponse(t, w, ErrorResponse{
+				ErrorMessage: fmt.Sprintf("error marshalling Article to JSON: %v", err),
+				Status:       http.StatusInternalServerError,
+			})
 			return
 		}
 
@@ -377,6 +440,7 @@ func TestArticlesResource_Update(t *testing.T) {
 		w.Write(b)
 	})
 
+	// Test successfully updating article
 	res, err := testClientPro.Articles.Update(ctx, ArticleUpdate{
 		Title:     "Demo article",
 		Published: false,
@@ -388,6 +452,13 @@ func TestArticlesResource_Update(t *testing.T) {
 	if res.Title != "Demo article" {
 		t.Error("article parsing failed")
 	}
+
+	// Test updating an article that does not exist
+	_, err = testClientPro.Articles.Update(ctx, ArticleUpdate{
+		Title:     "Demo article",
+		Published: false,
+	}, 11235813)
+	checkErrorResponse(t, err, http.StatusNotFound)
 }
 
 func TestArticlesResource_UpdateFailsWhenInsecure(t *testing.T) {
@@ -401,5 +472,51 @@ func TestArticlesResource_UpdateFailsWhenInsecure(t *testing.T) {
 
 	if !reflect.DeepEqual(err, ErrProtectedEndpoint) {
 		t.Error("auth check failed")
+	}
+}
+
+//
+// helper functions
+//
+
+func getNumericPathComponent(r *http.Request, index int) (int, error) {
+	p := r.URL.Path
+	pathComponents := strings.Split(p, "/")
+
+	// Remove leading slash path component
+	if pathComponents[0] == "" {
+		if len(pathComponents) == 0 {
+			return 0, errors.New("path was empty string")
+		}
+		pathComponents = pathComponents[1:]
+	}
+	if len(pathComponents) <= index {
+		return 0, errors.New("n-th path component (zero-indexed) not found")
+	}
+	return strconv.Atoi(pathComponents[index])
+}
+
+func sendErrorResponse(t *testing.T, w http.ResponseWriter, res ErrorResponse) {
+	w.Header().Add("content-type", "application/json")
+	w.WriteHeader(res.Status)
+	if err := json.NewEncoder(w).Encode(&res); err != nil {
+		t.Fatalf("error marshalling error status: %v", err)
+	}
+}
+
+func checkErrorResponse(t *testing.T, err error, expStatus int) {
+	switch err := err.(type) {
+	case nil:
+		t.Errorf(
+			"got nil error from find article endpoint when we were expecting "+
+				"%d ErrorResponse",
+			expStatus,
+		)
+	case *ErrorResponse:
+		if err.Status != expStatus {
+			t.Errorf("error should be %d, got %d", expStatus, err.Status)
+		}
+	default:
+		t.Errorf("error should be of type *ErrorResponse; was %T", err)
 	}
 }

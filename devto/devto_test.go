@@ -13,7 +13,6 @@ import (
 
 // ----- Testing utilities -----
 
-// ---------- testing utilities ----------
 var (
 	testMux       *http.ServeMux
 	testClientPro *Client
