@@ -2,6 +2,7 @@ package devto
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/url"
 	"strings"
 	"time"
@@ -215,4 +216,15 @@ func (s *WebURL) UnmarshalJSON(b []byte) error {
 	}
 	s.URL = uri
 	return nil
+}
+
+// ErrorResponse is an error returned from a dev.to API
+// endpoint.
+type ErrorResponse struct {
+	ErrorMessage string `json:"error"`
+	Status       int    `json:"status"`
+}
+
+func (e *ErrorResponse) Error() string {
+	return fmt.Sprintf(`%d error: "%s"`, e.Status, e.ErrorMessage)
 }

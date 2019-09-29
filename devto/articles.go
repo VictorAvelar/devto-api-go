@@ -21,7 +21,6 @@ type ArticlesResource struct {
 // parameters as specified on the documentation.
 // See: https://docs.dev.to/api/#tag/articles/paths/~1articles/get
 func (ar *ArticlesResource) List(ctx context.Context, opt ArticleListOptions) ([]ListedArticle, error) {
-	var l []ListedArticle
 	q, err := query.Values(opt)
 	if err != nil {
 		return nil, err
@@ -37,11 +36,14 @@ func (ar *ArticlesResource) List(ctx context.Context, opt ArticleListOptions) ([
 	}
 	defer res.Body.Close()
 
-	cont := decodeResponse(res)
-	if err := json.Unmarshal(cont, &l); err != nil {
+	if nonSuccessfulResponse(res) {
+		return nil, unmarshalErrorResponse(res)
+	}
+	var articles []ListedArticle
+	if err := json.NewDecoder(res.Body).Decode(&articles); err != nil {
 		return nil, err
 	}
-	return l, nil
+	return articles, nil
 }
 
 // ListForTag is a convenience method for retrieving articles
@@ -127,6 +129,9 @@ func (ar *ArticlesResource) listMyArticles(
 	}
 	defer res.Body.Close()
 
+	if nonSuccessfulResponse(res) {
+		return nil, unmarshalErrorResponse(res)
+	}
 	var articles []ListedArticle
 	if err := json.NewDecoder(res.Body).Decode(&articles); err != nil {
 		return nil, err
@@ -136,18 +141,22 @@ func (ar *ArticlesResource) listMyArticles(
 
 // Find will retrieve an Article matching the ID passed.
 func (ar *ArticlesResource) Find(ctx context.Context, id uint32) (Article, error) {
-	var art Article
 	req, err := ar.API.NewRequest(http.MethodGet, fmt.Sprintf("api/articles/%d", id), nil)
 	if err != nil {
-		return art, err
+		return Article{}, err
 	}
 
 	res, err := ar.API.HTTPClient.Do(req)
 	if err != nil {
-		return art, err
+		return Article{}, err
 	}
-	cont := decodeResponse(res)
-	if err := json.Unmarshal(cont, &art); err != nil {
+	defer res.Body.Close()
+
+	if nonSuccessfulResponse(res) {
+		return Article{}, unmarshalErrorResponse(res)
+	}
+	var art Article
+	if err := json.NewDecoder(res.Body).Decode(&art); err != nil {
 		return Article{}, err
 	}
 	return art, nil
@@ -171,10 +180,14 @@ func (ar *ArticlesResource) New(ctx context.Context, u ArticleUpdate) (Article, 
 	if err != nil {
 		return Article{}, err
 	}
+	defer res.Body.Close()
+
+	if nonSuccessfulResponse(res) {
+		return Article{}, unmarshalErrorResponse(res)
+	}
 
 	var a Article
-	content := decodeResponse(res)
-	if err := json.Unmarshal(content, &a); err != nil {
+	if err := json.NewDecoder(res.Body).Decode(&a); err != nil {
 		return Article{}, err
 	}
 	return a, nil
@@ -200,10 +213,14 @@ func (ar *ArticlesResource) Update(ctx context.Context, u ArticleUpdate, id uint
 	if err != nil {
 		return Article{}, err
 	}
+	defer res.Body.Close()
+
+	if nonSuccessfulResponse(res) {
+		return Article{}, unmarshalErrorResponse(res)
+	}
 
 	var a Article
-	content := decodeResponse(res)
-	if err := json.Unmarshal(content, &a); err != nil {
+	if err := json.NewDecoder(res.Body).Decode(&a); err != nil {
 		return Article{}, err
 	}
 	return a, nil
